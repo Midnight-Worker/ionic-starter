@@ -1,58 +1,71 @@
-SQLite mit Ionic und JavaScript
+# SQLite mit Ionic und JavaScript
 
-1. Bibliothek einbinden
+## 1. Bibliothek einbinden
 
-In deiner index.html:
+In deiner `index.html`:
 
+```html
 <script src="lib/sqljs/sql-wasm.js"></script>
 <script defer src="main.js"></script>
+```
 
-Die Dateien sql-wasm.js und sql-wasm.wasm liegen beide in lib/sqljs/.
+Die Dateien `sql-wasm.js` und `sql-wasm.wasm` liegen beide in `lib/sqljs/`.
 
-2. Datenbank öffnen
+## 2. Datenbank öffnen
 
-In main.js:
+In `main.js`:
 
+```javascript
 const SQL = await initSqlJs({
     locateFile: file => "lib/sqljs/" + file
 });
 
 const db = new SQL.Database();
+```
 
 Damit erzeugst du eine neue SQLite-Datenbank im Arbeitsspeicher.
 
-3. Tabelle erstellen
+## 3. Tabelle erstellen
 
+```javascript
 db.run(`
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT
     )
 `);
+```
 
-4. Datensatz einfügen (INSERT)
+## 4. Datensatz einfügen (INSERT)
 
+```javascript
 db.run(
     "INSERT INTO users (name) VALUES (?)",
     ["Max"]
 );
+```
 
-Das ? ist ein Platzhalter für den übergebenen Wert.
+Das `?` ist ein Platzhalter für den übergebenen Wert.
 
-5. Datensätze auslesen (SELECT)
+## 5. Datensätze auslesen (SELECT)
 
+```javascript
 const result = db.exec("SELECT * FROM users");
 
 console.log(result[0]?.values ?? []);
+```
 
 Beispielausgabe:
 
+```javascript
 [
     [1, "Max"]
 ]
+```
 
 Alternativ mit Spaltennamen:
 
+```javascript
 const stmt = db.prepare("SELECT * FROM users");
 
 while (stmt.step()) {
@@ -60,30 +73,38 @@ while (stmt.step()) {
 }
 
 stmt.free();
+```
 
-6. Datensatz ändern (UPDATE)
+## 6. Datensatz ändern (UPDATE)
 
+```javascript
 db.run(
     "UPDATE users SET name = ? WHERE id = ?",
     ["Anna", 1]
 );
+```
 
-7. Datensatz löschen (DELETE)
+## 7. Datensatz löschen (DELETE)
 
+```javascript
 db.run("DELETE FROM users WHERE id = ?", [1]);
+```
 
-8. Datenbank als Datei exportieren
+## 8. Datenbank als Datei exportieren
 
+```javascript
 const bytes = db.export();
+```
 
-bytes enthält die vollständige SQLite-Datenbank als Uint8Array.
+`bytes` enthält die vollständige SQLite-Datenbank als `Uint8Array`.
 
-Achtung: Ohne zusätzliche Speicherung gehen die Daten beim Neuladen der Webseite verloren.
+**Achtung:** Ohne zusätzliche Speicherung gehen die Daten beim Neuladen der Webseite verloren.
 
-9. Dauerhaft mit IndexedDB speichern
+## 9. Dauerhaft mit IndexedDB speichern
 
 Einmalig IndexedDB öffnen:
 
+```javascript
 const request = indexedDB.open("app", 1);
 
 request.onupgradeneeded = () => {
@@ -94,9 +115,11 @@ const storage = await new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
 });
+```
 
 Datenbank speichern:
 
+```javascript
 async function saveDB() {
     const tx = storage.transaction("files", "readwrite");
     tx.objectStore("files").put(db.export(), "database");
@@ -107,9 +130,11 @@ async function saveDB() {
         tx.onabort = () => reject(tx.error);
     });
 }
+```
 
 Gespeicherte Datenbank beim Start laden:
 
+```javascript
 async function loadDB() {
     const tx = storage.transaction("files", "readonly");
     const req = tx.objectStore("files").get("database");
@@ -123,57 +148,36 @@ async function loadDB() {
         ? new SQL.Database(bytes)
         : new SQL.Database();
 }
+```
 
-Zum Verwenden muss db veränderbar sein (let db). Rufe loadDB() beim Start auf und verwende die zurückgegebene Datenbank. Rufe nach jeder Änderung await saveDB() auf.
+Zum Verwenden muss `db` veränderbar sein (`let db`). Rufe `loadDB()` beim Start auf und verwende die zurückgegebene Datenbank. Rufe nach jeder Änderung `await saveDB()` auf.
 
-10. SQL-Cheatsheet
+## 10. SQL-Cheatsheet
 
-Aufgabe
+|Aufgabe|SQL|
+|---|---|
+|Tabelle erstellen|`CREATE TABLE`|
+|Daten einfügen|`INSERT INTO`|
+|Daten lesen|`SELECT`|
+|Daten ändern|`UPDATE`|
+|Daten löschen|`DELETE`|
+|Datensätze zählen|`SELECT COUNT(*)`|
+|Daten sortieren|`ORDER BY`|
+|Daten filtern|`WHERE`|
 
-SQL
+---
 
-Tabelle erstellen
+**Merksatz:**
 
-CREATE TABLE
-
-Daten einfügen
-
-INSERT INTO
-
-Daten lesen
-
-SELECT
-
-Daten ändern
-
-UPDATE
-
-Daten löschen
-
-DELETE
-
-Datensätze zählen
-
-SELECT COUNT(*)
-
-Daten sortieren
-
-ORDER BY
-
-Daten filtern
-
-WHERE
-
-Merksatz:
-
-db.run() – SQL ausführen
-
-db.exec() – Daten abfragen
-
-db.prepare() – vorbereitete Abfrage
-
-db.export() – SQLite-Datei exportieren
-
-IndexedDB – Datenbank dauerhaft speichern
+- `db.run()` – SQL ausführen
+    
+- `db.exec()` – Daten abfragen
+    
+- `db.prepare()` – vorbereitete Abfrage
+    
+- `db.export()` – SQLite-Datei exportieren
+    
+- `IndexedDB` – Datenbank dauerhaft speichern
+    
 
 sql.js arbeitet im Arbeitsspeicher. IndexedDB übernimmt die dauerhafte Speicherung im Browser oder in der Android-WebView.
