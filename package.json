@@ -1,0 +1,8 @@
+{
+  "name": "midnight-ionic-sqlite-starter",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "npx --yes live-server www --port=8000 --no-browser"
+  }
+}
